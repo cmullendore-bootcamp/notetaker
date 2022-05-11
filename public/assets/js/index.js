@@ -33,14 +33,17 @@ const getNotes = () =>
         },
     });
 
-const saveNote = (note) =>
-    fetch('/api/notes', {
-        method: 'POST',
+const saveNote = (note) => {
+    activeNote = note;
+    let url = (note.Id) ? `/api/notes/${note.Id}` : "/api/notes";
+    return fetch(url, {
+        method: (note.Id) ? 'PUT' : 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(note),
     });
+}
 
 const deleteNote = (id) =>
     fetch(`/api/notes/${id}`, {
@@ -51,23 +54,25 @@ const deleteNote = (id) =>
     });
 
 const renderActiveNote = () => {
-    hide(saveNoteBtn);
 
     if (activeNote.Id) {
-        noteTitle.setAttribute('readonly', true);
-        noteText.setAttribute('readonly', true);
         noteTitle.value = activeNote.Title;
         noteText.value = activeNote.Text;
     } else {
-        noteTitle.removeAttribute('readonly');
-        noteText.removeAttribute('readonly');
+        hide(saveNoteBtn);
+
         noteTitle.value = '';
         noteText.value = '';
     }
 };
 
 const handleNoteSave = () => {
+    let activeId = null;
+    if (activeNote) {
+        activeId = activeNote.Id;
+    }
     const newNote = {
+        Id: activeId,
         Title: noteTitle.value,
         Text: noteText.value,
     };
