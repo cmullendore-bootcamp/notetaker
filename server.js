@@ -19,6 +19,6 @@ app.get('/api/notes', (req, res) => {
 });
 
 
-app.listen(443, () => {
+app.listen(process.env.PORT, () => {
     console.log(`API server now on port 3001!`);
 });
