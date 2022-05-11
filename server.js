@@ -1,21 +1,29 @@
+const { response } = require('express');
 const Express = require('express');
 const FS = require('fs');
 const uuid = require("uuid");
 const Note = require('./lib/Note');
 
-/* class Note {
-    constructor(id, title, content, createdOn, updatedOn) {
-        this.Id = (id) ? id : uuid.v5.DNS;
-        this.Title = title;
-        this.Content = content;
-        this.CreatedOn = createdOn;
-        this.UpdatedOn = updatedOn;
-    }
-} */
+const dbPath = "./db/db.json";
+const enc = "utf-8"
 
 const app = Express();
+app.use(Express.urlencoded({ extended: true }));
+app.use(Express.static("public"));
+app.use(Express.json());
 
-let note = new Note(null, "title1", "content1", "createdOn1", "updatedOn1");
+let notes;
+if (FS.existsSync(dbPath)) {
+    notes = JSON.parse(FS.readFileSync(dbPath, enc));
+}
+if (!notes) {
+    notes = [];
+    WriteNotes();
+}
+
+function WriteNotes() {
+    FS.writeFileSync(dbPath, JSON.stringify(notes));
+}
 
 app.get('/', (req, res) => {
     let notes = FS.readFileSync('./public/index.html', "utf-8");
@@ -28,10 +36,58 @@ app.get('/notes', (req, res) => {
 });
 
 app.get('/api/notes', (req, res) => {
-    let db = FS.readFileSync('./db/db.json', "utf-8");
-    res.json(JSON.parse(db));
+    res.json(notes);
 });
 
+app.get('/api/notes/:id', (req, res) => {
+
+    let noteId = Note.Find(notes, req.params.id)
+
+    let note = notes[noteId];
+
+    res.json(note);
+
+});
+
+app.post('/api/notes', (req, res) => {
+
+    let json = req.body;
+
+    let note = new Note(json["Title"], json["Text"]);
+
+    notes.push(note);
+
+    WriteNotes();
+
+    res.json(note);
+
+});
+
+app.put('/api/notes/:id', (req, res) => {
+
+    let noteId = Note.Find(notes, req.params.id)
+
+    let note = Note.Parse(notes[noteId]);
+
+    note.Update(req.body);
+
+    notes[noteId] = note;
+
+    WriteNotes();
+
+    res.json(note);
+
+});
+
+app.delete('/api/notes/:id', (req, res) => {
+
+    notes = notes.filter(note => note.Id != req.params.id);
+
+    WriteNotes();
+
+    res.status(200).end();
+
+});
 
 app.listen(process.env.PORT, () => {
     console.log(`API server running!`);
